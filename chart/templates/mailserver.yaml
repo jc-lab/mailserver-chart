@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: "{{ .Release.Name }}"
+  labels:
+    {{- include "commonLabels" . | indent 4 }}
+spec:
+  serviceName: "{{ .Release.Name }}"
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "commonLabels" . | indent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "commonLabels" . | indent 8 }}
+    spec:
+      terminationGracePeriodSeconds: 300
+      containers:
+      - name: postfix
+        image: "{{ .Values.image }}"
+        imagePullPolicy: IfNotPresent
+        command:
+        - "/usr/sbin/postfix"
+        - "start-fg"
+        ports:
+        - name: smtp
+          containerPort: 25
+        - name: submission
+          containerPort: 587
+        - name: smtps
+          containerPort: 485
+        {{- if .Values.postfix.resources }}
+        resources: {{- toYaml .Values.postfix.resources | nindent 10 }}
+        {{- end }}
+        env:
+        volumeMounts:
+        - name: data
+          mountPath: /mail-storage
+        - name: run
+          mountPath: /run
+        - name: tls-secret
+          mountPath: /secret-tls
+      - name: dovecot
+        image: "{{ .Values.image }}"
+        imagePullPolicy: IfNotPresent
+        command:
+        - "/usr/sbin/dovecot"
+        - "-F"
+        ports:
+        - name: pop3
+          containerPort: 110
+        - name: pop3s
+          containerPort: 995
+        - name: imap
+          containerPort: 143
+        - name: imaps
+          containerPort: 993
+        {{- if .Values.dovecot.resources }}
+        resources: {{- toYaml .Values.dovecot.resources | nindent 10 }}
+        {{- end }}
+        volumeMounts:
+        - name: run
+          mountPath: /run
+        - name: tls-secret
+          mountPath: /secret-tls
+      - name: opendkim
+        image: "{{ .Values.image }}"
+        imagePullPolicy: IfNotPresent
+        command:
+        - "/usr/sbin/opendkim"
+        - "-f"
+        - "-u"
+        - "opendkim"
+        {{- if .Values.opendkim.resources }}
+        resources: {{- toYaml .Values.opendkim.resources | nindent 10 }}
+        {{- end }}
+        volumeMounts:
+        - name: run
+          mountPath: /run
+        - name: opendkim-secret
+          mountPath: /secret-dkim
+          readOnly: true
+      volumes:
+      - name: run
+        emptyDir: {}
+      - name: opendkim-secret
+        secret:
+          secretName: "{{ .Release.Name }}-opendkim-key"
+          defaultMode: 0400
+      - name: tls-secret
+        secret:
+          secretName: "{{ .Release.Name }}-tls"
+          defaultMode: 0400
+{{- if .Values.persistence.existingClaim }}
+      - name: data
+        persistentVolumeClaim:
+          claimName: {{ .Values.persistence.existingClaim }}
+{{- else }}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      {{- if .Values.persistence.storageClassName }}
+      storageClassName: {{ .Values.persistence.storageClassName | quote }}
+      {{- end }}
+      resources:
+        requests:
+          storage: "{{ .Values.persistence.size }}"
+{{- end }}
+
