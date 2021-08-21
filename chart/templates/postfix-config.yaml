@@ -1,0 +1,227 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "{{ .Release.Name }}-postfix-config"
+  labels:
+    app.kubernetes.io/managed-by: {{ .Release.Service | quote }}
+    app.kubernetes.io/instance: {{ .Release.Name | quote }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    helm.sh/chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+data:
+  main.cf: |
+    queue_directory = /var/spool/postfix
+    command_directory = /usr/sbin
+    daemon_directory = /usr/libexec/postfix
+    data_directory = /var/lib/postfix
+    html_directory = no
+    manpage_directory = /usr/share/man
+    sample_directory = /etc/postfix
+    readme_directory = /usr/share/doc/postfix/readme
+    meta_directory = /etc/postfix
+    shlib_directory = /usr/lib/postfix
+    mail_owner = postfix
+    inet_interfaces = all
+    inet_protocols = all
+    mydestination = localhost
+    unknown_local_recipient_reject_code = 550
+    #mynetworks = 10.0.0.0/24
+    relay_domains=
+    home_mailbox = Maildir/
+    smtpd_banner = \$myhostname ESMTP unknown
+    #smtpd_relay_restrictions = reject_unauth_destination
+    smtpd_recipient_restrictions =
+      reject_unauth_pipelining
+      permit_sasl_authenticated
+      reject_unauth_destination
+    # reject_unknown_recipient_domain
+    # reject_non_fqdn_sender
+    # reject_unknown_sender_domain
+    # reject_unverified_recipient
+    # check_sender_access hash:/etc/postfix/sender_access
+    # check_client_access hash:/etc/postfix/rbl_override
+    # reject_rbl_client spamlist.or.kr
+    # reject_rbl_client sbl-xbl.spamhaus.org
+    smtpd_sender_restrictions = reject_authenticated_sender_login_mismatch
+    smtpd_sasl_authenticated_header = yes
+    smtpd_sasl_type = dovecot
+    smtpd_sasl_path = /var/spool/postfix/private/auth
+    smtpd_sasl_auth_enable = yes
+    smtpd_tls_cert_file = /secret-tls/tls.crt
+    smtpd_tls_key_file =  /secret-tls/tls.key
+    smtpd_tls_session_cache_database = btree:/var/run/postfix.smtpd_scache
+    smtpd_use_tls = yes
+    #smtpd_tls_mandatory_exclude_ciphers = EXP, MEDIUM, LOW, MD5, DES, ADH, RC4, PSD, SRP, 3DES, eNULL, aNULL
+    smtpd_tls_exclude_ciphers = EXP, MEDIUM, LOW, MD5, DES, ADH, RC4, PSD, SRP, 3DES, eNULL, aNULL
+    tls_preempt_cipherlist = yes
+    
+    sendmail_path = /usr/sbin/sendmail
+    newaliases_path = /usr/bin/newaliases
+    mailq_path = /usr/bin/mailq
+    #sendmail_path = /usr/sbin/sendmail.postfix
+    #newaliases_path = /usr/bin/newaliases.postfix
+    #mailq_path = /usr/bin/mailq.postfix
+    
+    setgid_group = postdrop
+    html_directory = no
+    smtp_sasl_auth_enable = yes
+    smtp_tls_security_level = dane
+    smtp_sasl_tls_security_options = noanonymous
+    smtp_use_tls = yes
+    lmtp_host_lookup=native
+    smtp_host_lookup=native
+    #relayhost = 10.0.0.1:25
+    smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd
+    smtp_sasl_security_options = noanonymous
+    local_recipient_maps = \$virtual_mailbox_maps
+    smtpd_helo_required = yes
+    broken_sasl_auth_clients = yes
+    notify_classes = bounce
+    message_size_limit=268435456
+    mailbox_size_limit=0
+    
+    maillog_file=/dev/stdout
+        
+    myhostname=${MYHOSTNAME}
+    mydomain=${MYDOMAIN}
+    myorigin=${MYDOMAIN}
+    bounce_notice_recipient=${BOUNCE_NOTICE_RECIPIENT:-${POSTMASTER_ADDRESS}}
+
+    # DKIM
+    milter_default_action = accept
+    milter_protocol = 2
+    smtpd_milters=inet:localhost:8891
+    non_smtpd_milters=inet:localhost:8891
+
+    {{ .Values.postfix.additionalMainConfig | nindent 4 }}
+  master.cf: |
+    #
+    # Postfix master process configuration file.  For details on the format
+    # of the file, see the master(5) manual page (command: "man 5 master").
+    #
+    # Do not forget to execute "postfix reload" after editing this file.
+    #
+    # ==========================================================================
+    # service type  private unpriv  chroot  wakeup  maxproc command + args
+    #               (yes)   (yes)   (yes)   (never) (100)
+    # ==========================================================================
+    smtp      inet  n       -       n       -       -       smtpd
+    #smtp      inet  n       -       n       -       1       postscreen
+    #smtpd     pass  -       -       n       -       -       smtpd
+    #dnsblog   unix  -       -       n       -       0       dnsblog
+    #tlsproxy  unix  -       -       n       -       0       tlsproxy
+    submission inet n       -       n       -       -       smtpd
+      -o syslog_name=postfix/submission
+      -o smtpd_tls_security_level=encrypt
+      -o smtpd_sasl_auth_enable=yes
+      -o smtpd_sasl_path=private/auth
+      -o smtpd_sasl_security_options=noanonymous
+      -o smtpd_reject_unlisted_recipient=no
+      -o milter_macro_daemon_name=ORIGINATING
+      -o cleanup_service_name=sendcleanup
+    smtps     inet  n       -       n       -       -       smtpd
+      -o syslog_name=postfix/smtps
+      -o smtpd_tls_wrappermode=yes
+      -o smtpd_sasl_auth_enable=yes
+      -o smtpd_sasl_path=private/auth
+      -o smtpd_sasl_security_options=noanonymous
+      -o smtpd_reject_unlisted_recipient=no
+      -o milter_macro_daemon_name=ORIGINATING
+      -o cleanup_service_name=sendcleanup
+    #628       inet  n       -       n       -       -       qmqpd
+    pickup    unix  n       -       n       60      1       pickup
+    cleanup   unix  n       -       n       -       0       cleanup
+    sendcleanup  unix n     -       n       -       0       cleanup
+      -o header_checks=pcre:/etc/postfix/header_checks_submission
+    qmgr      unix  n       -       n       300     1       qmgr
+    #qmgr     unix  n       -       n       300     1       oqmgr
+    tlsmgr    unix  -       -       n       1000?   1       tlsmgr
+    rewrite   unix  -       -       n       -       -       trivial-rewrite
+    bounce    unix  -       -       n       -       0       bounce
+    defer     unix  -       -       n       -       0       bounce
+    trace     unix  -       -       n       -       0       bounce
+    verify    unix  -       -       n       -       1       verify
+    flush     unix  n       -       n       1000?   0       flush
+    proxymap  unix  -       -       n       -       -       proxymap
+    proxywrite unix -       -       n       -       1       proxymap
+    smtp      unix  -       -       n       -       -       smtp
+    relay     unix  -       -       n       -       -       smtp
+    #       -o smtp_helo_timeout=5 -o smtp_connect_timeout=5
+    showq     unix  n       -       n       -       -       showq
+    error     unix  -       -       n       -       -       error
+    retry     unix  -       -       n       -       -       error
+    discard   unix  -       -       n       -       -       discard
+    local     unix  -       n       n       -       -       local
+    virtual   unix  -       n       n       -       -       virtual
+    lmtp      unix  -       -       n       -       -       lmtp
+    anvil     unix  -       -       n       -       1       anvil
+    scache    unix  -       -       n       -       1       scache
+    postlog   unix-dgram n  -       n       -       1       postlogd
+    #
+    # ====================================================================
+    # Interfaces to non-Postfix software. Be sure to examine the manual
+    # pages of the non-Postfix software to find out what options it wants.
+    #
+    # Many of the following services use the Postfix pipe(8) delivery
+    # agent.  See the pipe(8) man page for information about \${recipient}
+    # and other message envelope options.
+    # ====================================================================
+    #
+    # maildrop. See the Postfix MAILDROP_README file for details.
+    # Also specify in main.cf: maildrop_destination_recipient_limit=1
+    #
+    #maildrop  unix  -       n       n       -       -       pipe
+    #  flags=DRXhu user=vmail argv=/usr/bin/maildrop -d \${recipient}
+    #
+    # ====================================================================
+    #
+    # Recent Cyrus versions can use the existing "lmtp" master.cf entry.
+    #
+    # Specify in cyrus.conf:
+    #   lmtp    cmd="lmtpd -a" listen="localhost:lmtp" proto=tcp4
+    #
+    # Specify in main.cf one or more of the following:
+    #  mailbox_transport = lmtp:inet:localhost
+    #  virtual_transport = lmtp:inet:localhost
+    #
+    # ====================================================================
+    #
+    # Cyrus 2.1.5 (Amos Gouaux)
+    # Also specify in main.cf: cyrus_destination_recipient_limit=1
+    #
+    #cyrus     unix  -       n       n       -       -       pipe
+    #  flags=DRX user=cyrus argv=/cyrus/bin/deliver -e -r \${sender} -m \${extension} \${user}
+    #
+    # ====================================================================
+    #
+    # Old example of delivery via Cyrus.
+    #
+    #old-cyrus unix  -       n       n       -       -       pipe
+    #  flags=R user=cyrus argv=/cyrus/bin/deliver -e -m \${extension} \${user}
+    #
+    # ====================================================================
+    #
+    # See the Postfix UUCP_README file for configuration details.
+    #
+    #uucp      unix  -       n       n       -       -       pipe
+    #  flags=Fqhu user=uucp argv=uux -r -n -z -a\$sender - \$nexthop!rmail (\$recipient)
+    #
+    # ====================================================================
+    #
+    # Other external delivery methods.
+    #
+    #ifmail    unix  -       n       n       -       -       pipe
+    #  flags=F user=ftn argv=/usr/lib/ifmail/ifmail -r \$nexthop (\$recipient)
+    #
+    #bsmtp     unix  -       n       n       -       -       pipe
+    #  flags=Fq. user=bsmtp argv=/usr/sbin/bsmtp -f \$sender \$nexthop \$recipient
+    #
+    #scalemail-backend unix -       n       n       -       2       pipe
+    #  flags=R user=scalemail argv=/usr/lib/scalemail/bin/scalemail-store
+    #  \${nexthop} \${user} \${extension}
+    #
+    #mailman   unix  -       n       n       -       -       pipe
+    #  flags=FRX user=list argv=/usr/lib/mailman/bin/postfix-to-mailman.py
+    #  \${nexthop} \${user}
+  header_checks_submission: |
+    /^Received: .*/ IGNORE
+
