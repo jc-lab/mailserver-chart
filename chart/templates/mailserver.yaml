@@ -119,7 +119,7 @@ spec:
           defaultMode: 0400
       - name: tls-secret
         secret:
-          secretName: "{{ .Release.Name }}-tls"
+          secretName: {{ default (printf "%s-tls" .Release.Name) .Values.tls.existingSecret | quote }}
           defaultMode: 0400
 {{- if .Values.volumes }}
       {{- toYaml .Values.volumes | nindent 6 }}

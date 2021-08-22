@@ -13,7 +13,10 @@ volumes:
 
 initContainers: []
 
-ostfix:
+tls:
+  # existingSecret: ""
+
+postfix:
   resources:
     requests:
       memory: "1Gi"
