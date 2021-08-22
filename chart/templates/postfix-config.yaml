@@ -46,10 +46,6 @@ data:
     smtpd_sasl_type = dovecot
     smtpd_sasl_path = /var/spool/postfix/private/auth
     smtpd_sasl_auth_enable = yes
-    smtpd_tls_cert_file = /secret-tls/tls.crt
-    smtpd_tls_key_file =  /secret-tls/tls.key
-    smtpd_tls_session_cache_database = btree:/var/run/postfix.smtpd_scache
-    smtpd_use_tls = yes
     #smtpd_tls_mandatory_exclude_ciphers = EXP, MEDIUM, LOW, MD5, DES, ADH, RC4, PSD, SRP, 3DES, eNULL, aNULL
     smtpd_tls_exclude_ciphers = EXP, MEDIUM, LOW, MD5, DES, ADH, RC4, PSD, SRP, 3DES, eNULL, aNULL
     tls_preempt_cipherlist = yes

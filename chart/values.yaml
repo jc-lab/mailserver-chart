@@ -13,7 +13,7 @@ volumes:
 
 initContainers: []
 
-postfix:
+ostfix:
   resources:
     requests:
       memory: "1Gi"
@@ -70,6 +70,10 @@ postfix:
       query_filter = cn=%u
       result_attribute = cn
   additionalMainConfig: |-
+    smtpd_tls_cert_file = /tls-secret/tls.crt
+    smtpd_tls_key_file =  /tls-secret/tls.key
+    smtpd_tls_session_cache_database = btree:/var/run/postfix.smtpd_scache
+    smtpd_use_tls = yes
     smtpd_sender_login_maps = ldap:/etc/postfix/ldap-virtual-sender-maps.cf
     virtual_mailbox_domains = ldap:/etc/postfix/ldap-virtual-mailbox-domains.cf
     virtual_alias_maps = ldap:/etc/postfix/ldap-virtual-alias-maps.cf
