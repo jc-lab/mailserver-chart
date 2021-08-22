@@ -11,6 +11,8 @@ volumes:
     secret:
       secretName: mailserver-tls
 
+initContainers: []
+
 postfix:
   resources:
     requests:

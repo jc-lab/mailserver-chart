@@ -16,6 +16,7 @@ spec:
         {{- include "commonLabels" . | indent 8 }}
     spec:
       terminationGracePeriodSeconds: 300
+      initContainers: {{- toYaml .Values.initContainers | nindent 8 }}
       containers:
       - name: postfix
         image: {{ template "imageFullName" . }}
