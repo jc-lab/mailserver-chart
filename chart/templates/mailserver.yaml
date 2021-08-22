@@ -114,7 +114,7 @@ spec:
           secretName: "{{ .Release.Name }}-dovecot-secure-config"
       - name: opendkim-secret
         secret:
-          secretName: "{{ .Release.Name }}-opendkim-key"
+          secretName: {{ default (printf "%s-opendkim-key" .Release.Name) .Values.opendkim.existingSecret | quote }}
           defaultMode: 0400
       - name: tls-secret
         secret:

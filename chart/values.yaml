@@ -276,6 +276,7 @@ dovecot:
       #blocking = no
 
 opendkim:
+  # existingSecret: ""
   resources:
     requests:
       memory: "128Mi"
