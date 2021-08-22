@@ -7,9 +7,6 @@ volumes:
   - name: common-secret
     secret:
       secretName: mailserver-common
-  - name: tls-secret
-    secret:
-      secretName: mailserver-tls
 
 initContainers: []
 
@@ -25,8 +22,6 @@ postfix:
   volumeMounts:
     - name: common-secret
       mountPath: /common-secret
-    - name: tls-secret
-      mountPath: /tls-secret
   secureConfigs:
     ldap-virtual-sender-maps.cf: |
       version = 3
@@ -73,8 +68,8 @@ postfix:
       query_filter = cn=%u
       result_attribute = cn
   additionalMainConfig: |-
-    smtpd_tls_cert_file = /tls-secret/tls.crt
-    smtpd_tls_key_file =  /tls-secret/tls.key
+    smtpd_tls_cert_file = /secret-tls/tls.crt
+    smtpd_tls_key_file =  /secret-tls/tls.key
     smtpd_tls_session_cache_database = btree:/var/run/postfix.smtpd_scache
     smtpd_use_tls = yes
     smtpd_sender_login_maps = ldap:/etc/postfix/ldap-virtual-sender-maps.cf
@@ -91,8 +86,6 @@ dovecot:
   volumeMounts:
     - name: common-secret
       mountPath: /common-secret
-    - name: tls-secret
-      mountPath: /tls-secret
   secureConfigs:
     conf.d__10-auth.conf: |
       auth_mechanisms = plain login
