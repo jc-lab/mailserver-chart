@@ -16,10 +16,11 @@ jobs:
         run: |
           echo "IMAGE_VERSION=release-${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
           echo "NEED_IMAGE_PUSH=true" >> $GITHUB_ENV
-          echo "IS_RELEASE=true" >> $GITHUB_ENV
+          echo "LATEST_IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/mailserver:latest" >> $GITHUB_ENV
       - name: Set Taged Image Name
         if: ${{ !(github.event_name == 'release' && github.event.action == 'published') }}
         run: |
+          echo "LATEST_IMAGE_NAME=" >> $GITHUB_ENV
           echo "${GITHUB_REF}" | grep "refs/tags" >/dev/null && echo "NEED_IMAGE_PUSH=true" >> $GITHUB_ENV || true
           echo "${GITHUB_REF}" | grep "refs/tags" >/dev/null && echo "IMAGE_VERSION=tag-${GITHUB_REF#refs/*/v}" || echo "IMAGE_VERSION=commit-${GITHUB_SHA::8}" >> $GITHUB_ENV
       - name: Set up Docker Buildx
@@ -38,6 +39,6 @@ jobs:
           file: image/Dockerfile
           push: ${{ env.NEED_IMAGE_PUSH == 'true' }}
           tags: |
-            ${{ env.IS_RELEASE == 'true' ? "ghcr.io/${{ github.repository_owner }}/mailserver:latest" : "" }}
+            ${{ env.LATEST_IMAGE_NAME }}
             ghcr.io/${{ github.repository_owner }}/mailserver:${{ env.IMAGE_VERSION }}
 
