@@ -16,6 +16,7 @@ jobs:
         run: |
           echo "IMAGE_VERSION=release-${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
           echo "NEED_IMAGE_PUSH=true" >> $GITHUB_ENV
+          echo "IS_RELEASE=true" >> $GITHUB_ENV
       - name: Set Taged Image Name
         if: ${{ !(github.event_name == 'release' && github.event.action == 'published') }}
         run: |
@@ -37,6 +38,6 @@ jobs:
           file: image/Dockerfile
           push: ${{ env.NEED_IMAGE_PUSH == 'true' }}
           tags: |
-            ghcr.io/${{ github.repository_owner }}/mailserver:latest
-            ghcr.io/${{ github.repository_owner }}/mailserver:release-${{ env.IMAGE_VERSION }}
+            ${{ env.IS_RELEASE == 'true' ? "ghcr.io/${{ github.repository_owner }}/mailserver:latest" : "" }}
+            ghcr.io/${{ github.repository_owner }}/mailserver:${{ env.IMAGE_VERSION }}
 
