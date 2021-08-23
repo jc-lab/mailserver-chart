@@ -94,7 +94,7 @@ spec:
         - "-u"
         - "opendkim"
         {{- if .Values.opendkim.resources }}
-        resources: {{- toYaml .Values.opendkim.resources | nindent 8 }}
+        resources: {{- toYaml .Values.opendkim.resources | nindent 10 }}
         {{- end }}
         env:
         {{- toYaml .Values.env | nindent 10 }}
