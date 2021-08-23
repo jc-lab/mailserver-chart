@@ -11,7 +11,7 @@ volumes:
 initContainers: []
 
 tls:
-  # existingSecret: ""
+  existingSecret: null
 
 postfix:
   resources:
@@ -19,7 +19,7 @@ postfix:
       memory: "1Gi"
     limits:
       memory: "2Gi"
-  volumeMounts:
+  volumeMounts2:
     - name: common-secret
       mountPath: /common-secret
   secureConfigs:

@@ -48,6 +48,9 @@ spec:
           mountPath: /secure-config
         - name: tls-secret
           mountPath: /secret-tls
+        {{- if .Values.postfix.volumeMounts }}
+        {{- toYaml .Values.postfix.volumeMounts | nindent 8 }}
+        {{- end }}
       - name: dovecot
         image: {{ template "imageFullName" . }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -78,6 +81,9 @@ spec:
           mountPath: /secure-config
         - name: tls-secret
           mountPath: /secret-tls
+        {{- if .Values.dovecot.volumeMounts }}
+        {{- toYaml .Values.docevot.volumeMounts | nindent 8 }}
+        {{- end }}
       - name: opendkim
         image: {{ template "imageFullName" . }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -88,7 +94,7 @@ spec:
         - "-u"
         - "opendkim"
         {{- if .Values.opendkim.resources }}
-        resources: {{- toYaml .Values.opendkim.resources | nindent 10 }}
+        resources: {{- toYaml .Values.opendkim.resources | nindent 8 }}
         {{- end }}
         env:
         {{- toYaml .Values.env | nindent 10 }}
@@ -98,6 +104,9 @@ spec:
         - name: opendkim-secret
           mountPath: /secret-dkim
           readOnly: true
+        {{- if .Values.opendkim.volumeMounts }}
+        {{- toYaml .Values.opendkim.volumeMounts | nindent 8 }}
+        {{- end }}
       volumes:
       - name: run
         emptyDir: {}
