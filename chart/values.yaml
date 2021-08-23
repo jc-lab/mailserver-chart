@@ -19,7 +19,7 @@ postfix:
       memory: "1Gi"
     limits:
       memory: "2Gi"
-  volumeMounts2:
+  volumeMounts:
     - name: common-secret
       mountPath: /common-secret
   secureConfigs:
@@ -284,6 +284,7 @@ opendkim:
       memory: "128Mi"
     limits:
       memory: "256Mi"
+  volumeMounts: []
 
 env:
   - name: MYHOSTNAME
