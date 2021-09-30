@@ -301,3 +301,14 @@ persistence:
   # storageClassName: 
   size: 128Gi
 
+## Example:
+## sidecars:
+##   - name: your-image-name
+##     image: your-image
+##     imagePullPolicy: Always
+##     ports:
+##       - name: portname
+##         containerPort: 1234
+##
+sidecars: []
+
